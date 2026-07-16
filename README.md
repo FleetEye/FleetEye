@@ -40,6 +40,8 @@ C'est ce que je construis avec FleetEye : aligné sur ces standards, et
 résolument neuf pour ce monde du transport en commun. Le développement est
 en cours.
 
+→ L'organisation : [**github.com/FleetEye**](https://github.com/FleetEye) — dépôt principal privé.
+
 ## 📫 Contact
 
 contact.fleeteye@gmail.com
