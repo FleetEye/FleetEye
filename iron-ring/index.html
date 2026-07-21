@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <title>IRON RING — prototype</title>
+  <style>
+    :root {
+      --blue: #3da9fc; --red: #ef476f; --gold: #f4d35e;
+      --bg: #0a0e14; --panel: #141b26; --panel2: #1d2733;
+      --txt: #e6edf3; --dim: #8b98a8;
+    }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body { margin: 0; height: 100%; background: var(--bg); color: var(--txt);
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; overflow: hidden; }
+    #app { position: fixed; inset: 0; overflow: hidden; }
+    .screen { position: absolute; inset: 0; display: none; }
+    .screen.active { display: flex; }
+    button { font-family: inherit; cursor: pointer; }
+
+    /* ---------------- GARAGE ---------------- */
+    #garage { flex-direction: column; padding: max(18px, env(safe-area-inset-top)) 18px 18px;
+      overflow-y: auto; }
+    .garage-top { display: flex; align-items: center; justify-content: space-between; }
+    .title { font-weight: 800; letter-spacing: 2px; font-size: 22px; }
+    .title span { color: var(--gold); }
+    .wave-tag { background: var(--panel2); color: var(--dim); padding: 4px 10px;
+      border-radius: 999px; font-size: 12px; font-weight: 700; letter-spacing: 1px; }
+    .scrap { display: flex; align-items: center; gap: 6px; margin: 14px 0 8px;
+      font-size: 18px; font-weight: 800; }
+    .scrap .lbl { color: var(--dim); font-size: 12px; font-weight: 600; letter-spacing: 1px; }
+    .bot-preview { text-align: center; font-size: 84px; margin: 4px 0 2px; filter: drop-shadow(0 6px 10px #000a); }
+    .parts { display: flex; flex-direction: column; gap: 12px; margin-top: 6px; }
+    .part-card { background: var(--panel); border: 1px solid #232f3e; border-radius: 14px; padding: 12px 14px; }
+    .part-head { display: flex; align-items: center; gap: 12px; }
+    .part-icon { font-size: 30px; }
+    .part-label { font-weight: 800; font-size: 16px; }
+    .part-blurb { color: var(--dim); font-size: 12px; }
+    .part-stat { margin-left: auto; font-weight: 800; color: var(--gold); font-size: 15px; }
+    .pips { display: flex; gap: 5px; margin: 10px 0; }
+    .pip { flex: 1; height: 7px; border-radius: 4px; background: #26313f; }
+    .pip.on { background: linear-gradient(90deg, var(--blue), #7ad0ff); }
+    .up-btn { width: 100%; border: none; border-radius: 10px; padding: 11px; font-weight: 800;
+      font-size: 14px; color: #05121c; background: linear-gradient(180deg, #7ad0ff, var(--blue)); }
+    .up-btn:disabled { background: #26313f; color: #55627244; }
+    .up-btn:not(:disabled):active { transform: translateY(1px); }
+    #btn-fight { margin-top: 18px; border: none; border-radius: 14px; padding: 18px;
+      font-size: 20px; font-weight: 900; letter-spacing: 2px; color: #200;
+      background: linear-gradient(180deg, #ffd166, var(--gold)); box-shadow: 0 6px 0 #b9922f; }
+    #btn-fight:active { transform: translateY(3px); box-shadow: 0 3px 0 #b9922f; }
+    #btn-reset { margin: 14px auto 0; background: none; border: none; color: var(--dim);
+      font-size: 12px; text-decoration: underline; }
+    .hint { color: var(--dim); font-size: 11px; text-align: center; margin-top: 10px; line-height: 1.5; }
+
+    /* ---------------- COMBAT ---------------- */
+    #fight { }
+    #scene { position: absolute; inset: 0; }
+    #hud { position: absolute; top: 0; left: 0; right: 0; padding: max(12px, env(safe-area-inset-top)) 14px 0;
+      display: flex; align-items: flex-start; gap: 10px; pointer-events: none; }
+    .hpwrap { flex: 1; }
+    .hpwrap .who { font-size: 11px; font-weight: 800; letter-spacing: 1px; margin-bottom: 4px; }
+    .hpbar { height: 14px; background: #0006; border: 1px solid #ffffff22; border-radius: 8px; overflow: hidden; }
+    .hpbar .fill { height: 100%; transition: width .12s linear; }
+    .hpwrap.p .who { color: var(--blue); }
+    .hpwrap.p .fill { background: linear-gradient(90deg, #2a7, #6f6); width: 100%; }
+    .hpwrap.e { text-align: right; }
+    .hpwrap.e .bar-align { display: flex; justify-content: flex-end; }
+    .hpwrap.e .hpbar { display: flex; justify-content: flex-end; }
+    .hpwrap.e .who { color: var(--red); }
+    .hpwrap.e .fill { background: linear-gradient(90deg, #f66, #d33); width: 100%; }
+    #fight-wave { align-self: center; font-size: 12px; font-weight: 800; color: var(--dim);
+      background: #0007; padding: 4px 8px; border-radius: 8px; }
+
+    #fight-banner { position: absolute; top: 34%; left: 0; right: 0; text-align: center;
+      font-size: 44px; font-weight: 900; letter-spacing: 3px; color: #fff; pointer-events: none;
+      opacity: 0; transition: opacity .2s; text-shadow: 0 3px 16px #000, 0 0 30px var(--gold); }
+    #fight-banner.show { opacity: 1; }
+
+    /* ---- contrôles tactiles ---- */
+    #controls { position: absolute; inset: 0; touch-action: none; }
+    #joy-zone { position: absolute; left: 0; bottom: 0; width: 55%; height: 62%; }
+    #joy-base { position: fixed; display: none; width: 118px; height: 118px; margin: 0;
+      transform: translate(-50%, -50%); border-radius: 50%; background: #ffffff10;
+      border: 2px solid #ffffff2a; pointer-events: none; }
+    #joy-knob { position: absolute; left: 50%; top: 50%; width: 54px; height: 54px; margin: -27px 0 0 -27px;
+      border-radius: 50%; background: #ffffff30; border: 2px solid #ffffff55; }
+    .btn-cluster { position: absolute; right: 20px; bottom: 30px; width: 190px; height: 190px; }
+    .abtn { position: absolute; border-radius: 50%; border: 2px solid #ffffff33; color: #fff;
+      font-weight: 800; font-size: 13px; display: flex; align-items: center; justify-content: center;
+      user-select: none; }
+    .abtn.active { transform: scale(0.92); filter: brightness(1.3); }
+    #btn-punch { right: 0; bottom: 12px; width: 96px; height: 96px; font-size: 16px;
+      background: radial-gradient(circle at 40% 35%, #ff9db0, var(--red)); box-shadow: 0 5px 0 #a11f3a; }
+    #btn-guard { right: 96px; bottom: 90px; width: 68px; height: 68px;
+      background: radial-gradient(circle at 40% 35%, #9fd0ff, #2b7fd6); box-shadow: 0 4px 0 #1b4f88; }
+    #btn-dodge { right: 6px; bottom: 118px; width: 68px; height: 68px;
+      background: radial-gradient(circle at 40% 35%, #ffe49b, #d6a92b); box-shadow: 0 4px 0 #8a6a17; }
+
+    /* ---------------- RÉSULTAT ---------------- */
+    #result { flex-direction: column; align-items: center; justify-content: center;
+      background: #080b10ee; gap: 14px; padding: 24px; text-align: center; }
+    #result-title { font-size: 40px; font-weight: 900; letter-spacing: 3px; }
+    #result-title.win { color: var(--gold); text-shadow: 0 0 24px #f4d35e88; }
+    #result-title.lose { color: var(--red); text-shadow: 0 0 24px #ef476f88; }
+    #result-sub { color: var(--dim); font-size: 15px; line-height: 1.6; }
+    #btn-continue { margin-top: 8px; border: none; border-radius: 12px; padding: 15px 34px;
+      font-size: 16px; font-weight: 800; letter-spacing: 1px; color: #05121c;
+      background: linear-gradient(180deg, #7ad0ff, var(--blue)); }
+    #btn-continue:active { transform: translateY(2px); }
+  </style>
+</head>
+<body>
+  <div id="app">
+
+    <!-- ===== GARAGE ===== -->
+    <section id="garage" class="screen">
+      <div class="garage-top">
+        <div class="title">IRON <span>RING</span></div>
+        <div class="wave-tag" id="wave-tag">VAGUE 1</div>
+      </div>
+      <div class="scrap"><span class="lbl">FERRAILLE</span> <span id="scrap-count">0</span> ⚙️</div>
+      <div class="bot-preview">🤖</div>
+      <div class="parts" id="parts"></div>
+      <button id="btn-fight">⚔️ COMBAT</button>
+      <button id="btn-reset">réinitialiser la progression</button>
+      <div class="hint">
+        Tactile : joystick à gauche · boutons à droite (frappe / garde / esquive).<br>
+        Clavier : WASD déplacer · J frapper · Maj garder · Espace esquiver.
+      </div>
+    </section>
+
+    <!-- ===== COMBAT ===== -->
+    <section id="fight" class="screen">
+      <div id="scene"></div>
+      <div id="hud">
+        <div class="hpwrap p">
+          <div class="who">TON ROBOT</div>
+          <div class="hpbar"><div class="fill" id="hp-player"></div></div>
+        </div>
+        <div id="fight-wave">VAGUE 1</div>
+        <div class="hpwrap e">
+          <div class="who">ADVERSAIRE</div>
+          <div class="hpbar"><div class="fill" id="hp-enemy"></div></div>
+        </div>
+      </div>
+      <div id="fight-banner"></div>
+      <div id="controls">
+        <div id="joy-zone"></div>
+        <div id="joy-base"><div id="joy-knob"></div></div>
+        <div class="btn-cluster">
+          <div class="abtn" id="btn-dodge">ESQUIVE</div>
+          <div class="abtn" id="btn-guard">GARDE</div>
+          <div class="abtn" id="btn-punch">FRAPPE</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== RÉSULTAT ===== -->
+    <section id="result" class="screen">
+      <div id="result-title"></div>
+      <div id="result-sub"></div>
+      <button id="btn-continue">CONTINUER</button>
+    </section>
+
+  </div>
+
+  <script type="importmap">
+    { "imports": { "three": "./vendor/three.module.min.js" } }
+  </script>
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
